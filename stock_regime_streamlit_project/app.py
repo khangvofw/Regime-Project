@@ -135,9 +135,17 @@ def load_sector(sector: str) -> pd.DataFrame:
     path = SECTOR_FILES[sector]
     df = pd.read_csv(path)
     df["date"] = pd.to_datetime(df["date"], errors="coerce")
+    # Streamlit Cloud may install a recent pandas version where errors="ignore"
+    # is no longer accepted by pd.to_numeric. Keep text/categorical columns intact
+    # and coerce only true numeric-like columns.
+    text_cols = {
+        "sector", "ticker", "stock_regime", "stock_regime_risk_zone",
+        "sector_regime", "sector_context", "market_regime", "market_context",
+        "dashboard_decision"
+    }
     for c in df.columns:
-        if c not in ["sector", "ticker", "stock_regime", "stock_regime_risk_zone", "sector_regime", "sector_context", "market_regime", "market_context"]:
-            df[c] = pd.to_numeric(df[c], errors="ignore")
+        if c not in text_cols and c != "date":
+            df[c] = pd.to_numeric(df[c], errors="coerce")
     if "drawdown60" not in df.columns and "drawdown_60" in df.columns:
         df["drawdown60"] = df["drawdown_60"]
     if "stock_regime_risk_score" not in df.columns and "score_stock_momentum_risk" in df.columns:
